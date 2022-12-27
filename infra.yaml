@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Create app1 Network enrionments"
+
+Parameters: 
+  projectName:
+    Type: String
+    Default: "ecsBastion"
+  env:
+    Type: String
+    Default: "dev"
+
+  # EKSClusterName:
+  #   Type: String
+  # VPCCIDR:
+  #   Type: String
+  #   Default: "10.1.0.0/16"
+  # PublicSubnetACIDR:
+  #   Type: String
+  #   Default: "10.1.0.0/24"
+
+Resources: 
+# ------------------------------------------------------------#
+#  VPC IGW IGWattach
+# ------------------------------------------------------------#
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-vpc"
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-igw"
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref IGW
+
+# ------------------------------------------------------------#
+#  Subnet RT RTaccosiate
+# ------------------------------------------------------------#
+# Subnet
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-publicSubnet1a"
+
+  PublicSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-publicSubnet1c"
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.10.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-privateSubnet1a"
+
+  PrivateSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.11.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-privateSubnet1c"
+
+# RouteTable
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-publicRT"
+          
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${projectName}-${env}-privateRT"
+
+# Route
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+
+# RouteTableAssociate
+  publicARTAssociate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTable
+
+  publicCRTAssociate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetC
+      RouteTableId: !Ref PublicRouteTable
+
+# ALB
+
+
+
+Outputs:
+  VPCID:
+    Value: !Ref VPC
+    Export:
+      Name: !Sub "${projectName}-${env}-vpc-ID"
+      
+  VPCCIDR:
+    Value: !GetAtt VPC.CidrBlock
+    Export:
+      Name: !Sub "${projectName}-${env}-vpccidr"
+
+  PublicSubnetAID:
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: !Sub "${projectName}-${env}-publicSubnet1a-ID"
+
+  PublicSubnetCID:
+    Value: !Ref PublicSubnetC
+    Export:
+      Name: !Sub "${projectName}-${env}-publicSubnet1c-ID"
+
+  PrivateSubnetAID:
+    Value: !Ref PrivateSubnetA
+    Export:
+      Name: !Sub "${projectName}-${env}-privateSubnet1a-ID"
+
+  PrivateSubnetC:
+    Value: !Ref PrivateSubnetC
+    Export:
+      Name: !Sub "${projectName}-${env}-privateubnet1c-ID"
